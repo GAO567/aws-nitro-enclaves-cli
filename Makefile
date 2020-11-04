@@ -93,23 +93,13 @@ sources: aws-nitro-enclaves-cli.tar.gz crates-dependencies
 .PHONY: all
 all: build-setup init nitro-cli vsock-proxy
 
-.PHONY: driver-deps
-driver-deps:
-	((cat /etc/os-release | grep -qni  "Ubuntu"  \
-		&& sudo apt-get install -y linux-headers-$$(uname -r)) || \
-	(cat /etc/os-release | grep -qni  "Amazon Linux\|CentOS\|RedHat" \
-		&& sudo yum install -y kernel-headers-$$(uname -r) \
-		&& sudo yum install -y kernel-devel-$$(uname -r)) || \
-	echo "Warning: kernel-header were not installed") \
-	&& echo "Successfully installed the driver deps"
-
 # In order to avoid executing the same rule everytime,
 # the build rules are prefixed by dot and are generating
 # a file with the same name via the touch command. This
 # change is required in order to capture the timestamp
 # of the rule.
 .build-container: tools/Dockerfile1804.${HOST_MACHINE}
-	docker image build -t $(CONTAINER_TAG) -f tools/Dockerfile1804.${HOST_MACHINE} tools/
+	docker image build -t $(CONTAINER_TAG) -f tools/Dockerfile1804.${HOST_MACHINE} --format docker tools/
 	touch $@
 
 build-container: .build-container
@@ -119,16 +109,6 @@ $(OBJ_PATH):
 
 # Build the $(OBJ_PATH) directory only if it does not exist.
 build-setup: | $(OBJ_PATH);
-
-nitro_enclaves: drivers/virt/nitro_enclaves/ne_misc_dev.c drivers/virt/nitro_enclaves/ne_pci_dev.c driver-deps
-	PREV_DIR=$$PWD && cd drivers/virt/nitro_enclaves/ && make && cd $$PREV_DIR
-
-.PHONY: nitro_enclaves-clean
-nitro_enclaves-clean:
-	PREV_DIR=$$PWD && cd drivers/virt/nitro_enclaves/ && make clean && cd $$PREV_DIR
-
-.PHONY: driver-clean
-driver-clean: nitro_enclaves-clean
 
 .PHONY: init
 init: init.c build-setup
@@ -318,10 +298,7 @@ install-tools:
 	$(CP) -r examples/${HOST_MACHINE}/* ${NITRO_CLI_INSTALL_DIR}${DATA_DIR}/nitro_enclaves/examples/
 
 .PHONY: install
-install: install-tools nitro_enclaves
-	$(MKDIR) -p ${NITRO_CLI_INSTALL_DIR}/lib/modules/$(uname -r)/extra/nitro_enclaves
-	$(INSTALL) -D -m 0755 drivers/virt/nitro_enclaves/nitro_enclaves.ko \
-               ${NITRO_CLI_INSTALL_DIR}/lib/modules/$(uname -r)/extra/nitro_enclaves/nitro_enclaves.ko
+install: install-tools
 	$(INSTALL) -D -m 0644 bootstrap/env.sh ${NITRO_CLI_INSTALL_DIR}${ENV_SETUP_DIR}/nitro-cli-env.sh
 	$(INSTALL) -D -m 0755 bootstrap/nitro-cli-config ${NITRO_CLI_INSTALL_DIR}${ENV_SETUP_DIR}/nitro-cli-config
 	sed -i "2 a NITRO_CLI_INSTALL_DIR=$$(readlink -f ${NITRO_CLI_INSTALL_DIR})" \
@@ -339,7 +316,6 @@ uninstall:
 	$(RM) -f ${NITRO_CLI_INSTALL_DIR}${CONF_DIR}/nitro_enclaves/vsock-proxy.yaml
 	$(RM) -f ${NITRO_CLI_INSTALL_DIR}${UNIT_DIR}/nitro-enclaves-allocator.service
 	$(RM) -f ${NITRO_CLI_INSTALL_DIR}${CONF_DIR}/nitro_enclaves/allocator.yaml
-	$(RM) -rf ${NITRO_CLI_INSTALL_DIR}/lib/modules/$(uname -r)/extra/nitro_enclaves
 	$(RM) -f ${NITRO_CLI_INSTALL_DIR}${ENV_SETUP_DIR}/nitro-cli-env.sh
 	$(RM) -f ${NITRO_CLI_INSTALL_DIR}${ENV_SETUP_DIR}/nitro-cli-config
 

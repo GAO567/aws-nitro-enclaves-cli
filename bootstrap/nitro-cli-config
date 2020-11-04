@@ -454,10 +454,10 @@ function driver_insert {
         driver_remove
     fi
 
-    print "Inserting the driver..."
+    # print "Inserting the driver..."
 
     # Insert the new driver.
-    sudo_run "insmod $DRIVER_NAME.ko" || fail "Failed to insert driver."
+    # sudo_run "insmod $DRIVER_NAME.ko" || fail "Failed to insert driver."
 
     # Verify that the new driver has been inserted.
     [ "$(lsmod | grep -cw $DRIVER_NAME)" -eq 1 ] || fail "The driver is not visible."
