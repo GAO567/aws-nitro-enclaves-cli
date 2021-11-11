@@ -29,7 +29,7 @@ RUN curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID"
     apt-get -y install docker-ce
 
 # Install rust toolchain and its dependencies
-ENV RUST_VERSION=1.49.0
+ENV RUST_VERSION=1.56.1
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUST_VERSION
 RUN echo "source $HOME/.cargo/env" >> $HOME/.bashrc
 
